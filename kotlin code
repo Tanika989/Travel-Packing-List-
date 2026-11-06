@@ -1,0 +1,552 @@
+package com.example.travelpackinglist
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            MaterialTheme {
+                TravelPackingApp()
+            }
+        }
+    }
+}
+
+@Composable
+fun TravelPackingApp() {
+
+    // SCREEN NAVIGATION
+    var currentScreen by remember {
+        mutableStateOf("Home")
+    }
+
+    // PARALLEL ARRAYS
+    val itemNames = remember {
+        arrayOfNulls<String>(50).apply {
+            this[0] = "Passport"
+            this[1] = "Phone Charger"
+            this[2] = "Clothes"
+            this[3] = "Toothbrush"
+            this[4] = "Sunscreen"
+            this[5] = "Wallet"
+        }
+    }
+
+    val categories = remember {
+        arrayOfNulls<String>(50).apply {
+            this[0] = "Documents"
+            this[1] = "Electronics"
+            this[2] = "Clothing"
+            this[3] = "Toiletries"
+            this[4] = "Toiletries"
+            this[5] = "Essentials"
+        }
+    }
+
+    val quantities = remember {
+        arrayOfNulls<String>(50).apply {
+            this[0] = "1"
+            this[1] = "1"
+            this[2] = "5"
+            this[3] = "1"
+            this[4] = "1"
+            this[5] = "1"
+        }
+    }
+
+    val comments = remember {
+        arrayOfNulls<String>(50).apply {
+            this[0] = "Keep it safe"
+            this[1] = "Pack before leaving"
+            this[2] = "Choose comfortable clothes"
+            this[3] = "Travel size"
+            this[4] = "For sunny days"
+            this[5] = "Check before leaving"
+        }
+    }
+
+    // CHECKLIST ARRAY
+    val packedItems = remember {
+        BooleanArray(50)
+    }
+
+    // NUMBER OF ITEMS
+    var itemCount by remember {
+        mutableIntStateOf(6)
+    }
+
+    // REFRESH SCREEN AFTER CHANGES
+    var refresh by remember {
+        mutableIntStateOf(0)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = androidx.compose.ui.graphics.Color(0xFFF2F7FF)
+    ) {
+
+        when (currentScreen) {
+
+            "Home" -> {
+
+                HomeScreen(
+                    onViewList = {
+                        currentScreen = "Packing List"
+                    },
+                    onAddItem = {
+                        currentScreen = "Add Item"
+                    },
+                    onAbout = {
+                        currentScreen = "About"
+                    }
+                )
+            }
+
+            "Packing List" -> {
+
+                PackingListScreen(
+                    itemNames = itemNames,
+                    categories = categories,
+                    quantities = quantities,
+                    comments = comments,
+                    packedItems = packedItems,
+                    itemCount = itemCount,
+                    refresh = refresh,
+                    onBack = {
+                        currentScreen = "Home"
+                    },
+                    onAdd = {
+                        currentScreen = "Add Item"
+                    },
+                    onToggle = { index, checked ->
+                        packedItems[index] = checked
+                        refresh++
+                    },
+                    onClear = {
+                        for (i in 0 until itemCount) {
+                            packedItems[i] = false
+                        }
+                        refresh++
+                    }
+                )
+            }
+
+            "Add Item" -> {
+
+                AddItemScreen(
+                    onBack = {
+                        currentScreen = "Home"
+                    },
+                    onSave = { name, category, quantity, comment ->
+
+                        if (itemCount < 50 && name.isNotBlank()) {
+
+                            itemNames[itemCount] = name
+                            categories[itemCount] = category
+                            quantities[itemCount] = quantity
+                            comments[itemCount] = comment
+
+                            packedItems[itemCount] = false
+
+                            itemCount++
+                            refresh++
+
+                            currentScreen = "Packing List"
+                        }
+                    }
+                )
+            }
+
+            "About" -> {
+
+                AboutScreen(
+                    onBack = {
+                        currentScreen = "Home"
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+// HOME SCREEN
+@Composable
+fun HomeScreen(
+    onViewList: () -> Unit,
+    onAddItem: () -> Unit,
+    onAbout: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Text(
+            text = "✈️",
+            fontSize = 65.sp
+        )
+
+        Text(
+            text = "Travel Packing List",
+            fontSize = 29.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Pack Smart. Travel Happy!",
+            fontSize = 17.sp
+        )
+
+        Spacer(modifier = Modifier.height(35.dp))
+
+        Button(
+            onClick = onViewList,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("View Packing List")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onAddItem,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("＋ Add Item")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onAbout,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("About")
+        }
+    }
+}
+
+
+// PACKING LIST SCREEN
+@Composable
+fun PackingListScreen(
+    itemNames: Array<String?>,
+    categories: Array<String?>,
+    quantities: Array<String?>,
+    comments: Array<String?>,
+    packedItems: BooleanArray,
+    itemCount: Int,
+    refresh: Int,
+    onBack: () -> Unit,
+    onAdd: () -> Unit,
+    onToggle: (Int, Boolean) -> Unit,
+    onClear: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "My Packing List",
+            fontSize = 27.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text("Total Items: $itemCount")
+
+        val packedCount = (0 until itemCount).count {
+            packedItems[it]
+        }
+
+        Text("Packed: $packedCount / $itemCount")
+
+        LinearProgressIndicator(
+            progress = {
+                if (itemCount == 0) 0f
+                else packedCount.toFloat() / itemCount
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp)
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // LOOP THROUGH THE PARALLEL ARRAYS
+        key(refresh) {
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+
+                for (i in 0 until itemCount) {
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                    ) {
+
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Checkbox(
+                                checked = packedItems[i],
+                                onCheckedChange = {
+                                    onToggle(i, it)
+                                }
+                            )
+
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+
+                                Text(
+                                    text = itemNames[i] ?: "",
+                                    fontSize = 18.sp
+                                )
+
+                                Text(
+                                    text = "Category: ${categories[i]}"
+                                )
+
+                                Text(
+                                    text = "Quantity: ${quantities[i]}"
+                                )
+
+                                Text(
+                                    text = "Comment: ${comments[i]}"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Button(
+            onClick = onAdd,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("＋ Add New Item")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = onClear,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Clear All Checkboxes")
+        }
+
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Back to Home")
+        }
+    }
+}
+
+
+// ADD ITEM SCREEN
+@Composable
+fun AddItemScreen(
+    onBack: () -> Unit,
+    onSave: (String, String, String, String) -> Unit
+) {
+
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Essentials") }
+    var quantity by remember { mutableStateOf("1") }
+    var comment by remember { mutableStateOf("") }
+
+    val categoryOptions = listOf(
+        "Essentials",
+        "Documents",
+        "Clothing",
+        "Electronics",
+        "Toiletries",
+        "Other"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+
+        Text(
+            text = "Add New Item",
+            fontSize = 27.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Item Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text("Choose Category")
+
+        categoryOptions.forEach { option ->
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                RadioButton(
+                    selected = category == option,
+                    onClick = { category = option }
+                )
+
+                Text(option)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = quantity,
+            onValueChange = { quantity = it },
+            label = { Text("Quantity") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = comment,
+            onValueChange = { comment = it },
+            label = { Text("Comments") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(25.dp))
+
+        Button(
+            onClick = {
+                if (name.isNotBlank() &&
+                    (quantity.toIntOrNull() ?: 0) > 0
+                ) {
+                    onSave(
+                        name.trim(),
+                        category,
+                        quantity,
+                        comment
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = name.isNotBlank() &&
+                (quantity.toIntOrNull() ?: 0) > 0
+        ) {
+            Text("Save Item")
+        }
+
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Cancel")
+        }
+    }
+}
+
+
+// ABOUT SCREEN
+@Composable
+fun AboutScreen(
+    onBack: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(25.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Text(
+            text =
+            fontSize = 65.sp
+        )
+
+        Text(
+            text = "Travel Packing List",
+            fontSize = 27.sp,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        Text(
+            text = "Version 1.0",
+            fontSize = 18.sp
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        Text(
+            text = "A simple application that helps " +
+                "travellers organise their packing items, " +
+                "manage quantities and prepare for their trips.",
+            fontSize = 16.sp
+        )
+
+        Spacer(modifier = Modifier.height(25.dp))
+
+        Text(
+            text = "Pack Smart. Travel Happy!",
+            fontSize = 18.sp
+        )
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Button(onClick = onBack) {
+            Text("Back to Home")
+        }
+    }
+}
+
+
